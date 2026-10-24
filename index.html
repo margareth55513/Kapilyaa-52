@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kapilya @52 Photobooth</title>
+  <!-- Google Fonts for Sky/Y2K Playful aesthetic -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=VT323&display=swap" rel="stylesheet">
+  <!-- html2pdf library for exact 4x6 PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #cbebff; /* Soft sky blue */
+      --primary-blue: #1c5276; /* Sky primary theme color */
+      --accent-cloud: #ffffff; /* Pure cloud white */
+      --accent-sun: #fff3a1; /* Warm sun gold */
+      --accent-sky-soft: #e3f2fd;
+      --shadow-soft: 0 10px 25px rgba(28, 82, 118, 0.15);
+      --font-main: 'Fredoka', sans-serif;
+      --font-retro: 'VT323', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      /* Cloud pattern gradient background */
+      background-image: 
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 35%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 40%),
+        radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 45%);
+      font-family: var(--font-main);
+      color: var(--primary-blue);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Floating Sky & Airplane Background Elements */
+    .sticker {
+      position: absolute;
+      font-size: 2.2rem;
+      pointer-events: none;
+      z-index: 1;
+      animation: floatSky 5s ease-in-out infinite alternate;
+    }
+    .sticker.airplane-sticker {
+      top: 10% !important;
+      right: 8% !important;
+      animation: flyAirplane 8s linear infinite;
+    }
+    .sticker.cloud-sticker {
+      bottom: 12% !important;
+      right: 5% !important;
+    }
+    @keyframes floatSky {
+      0% { transform: translateY(0px) rotate(0deg); }
+      100% { transform: translateY(-16px) rotate(5deg); }
+    }
+    @keyframes flyAirplane {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(-20px, -15px) rotate(-3deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+    /* Flash Screen Effect */
+    #flash-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: opacity 0.15s ease-out;
+    }
+
+    /* Screen Wrappers */
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 1200px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding: 30px;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .screen.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Typography */
+    h1.brand-title {
+      font-size: 5.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+      color: var(--primary-blue);
+      text-shadow: 4px 4px 0px var(--accent-cloud), 6px 6px 0px rgba(135, 206, 235, 0.5);
+      text-align: center;
+    }
+    h2.screen-title {
+      font-size: 2.8rem;
+      margin-bottom: 25px;
+      text-align: center;
+      text-shadow: 2px 2px 0px var(--accent-cloud);
+    }
+    p.subtitle {
+      font-size: 1.5rem;
+      margin-bottom: 35px;
+      opacity: 0.9;
+      font-weight: 600;
+    }
+
+    /* Buttons */
+    .btn {
+      background: var(--accent-cloud);
+      color: var(--primary-blue);
+      border: 4px solid var(--primary-blue);
+      padding: 16px 44px;
+      font-size: 1.4rem;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 var(--primary-blue);
+      transition: all 0.2s ease;
+      font-family: var(--font-main);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 var(--primary-blue);
+      background: #f0f8ff;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--primary-blue);
+    }
+    .btn-secondary {
+      background: var(--accent-sky-soft);
+    }
+
+    /* Type Options */
+    .type-options-grid {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 20px 0 30px 0;
+      width: 100%;
+    }
+    .type-card {
+      background: #ffffff;
+      border: 4px solid var(--primary-blue);
+      border-radius: 24px;
+      padding: 25px;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      transition: all 0.3s ease;
+    }
+    .type-card:hover {
+      transform: translateY(-8px) scale(1.02);
+    }
+    .type-card h3 {
+      font-size: 1.6rem;
+      margin-bottom: 6px;
+    }
+    .type-card p {
+      font-size: 1.1rem;
+      opacity: 0.8;
+      margin-bottom: 15px;
+    }
+
+    /* Photostrip Layout Wireframes */
+    .wireframe-container {
+      width: 220px;
+      height: 280px;
+      background: #e3f2fd;
+      border: 2px dashed var(--primary-blue);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+    }
+    .wf-strip {
+      background: #ffffff;
+      border: 2px solid var(--primary-blue);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 6px;
+      gap: 4px;
+      box-sizing: border-box;
+    }
+    .wf-strip.normal { width: 85px; }
+    .wf-strip.mini { width: 42px; }
+
+    .wf-slot {
+      background: #bbdefb;
+      border: 1px solid #90caf9;
+      flex: 1;
+      border-radius: 2px;
+    }
+
+    /* Frame Selection Layout */
+    .frame-selection-layout {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .frame-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      gap: 15px;
+      max-height: 440px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    .frame-tile {
+      background: #fff;
+      border: 3px solid var(--primary-blue);
+      border-radius: 16px;
+      padding: 10px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 130px;
+    }
+    .frame-tile:hover, .frame-tile.selected {
+      border-color: #0288d1;
+      background: #e1f5fe;
+      transform: scale(1.03);
+    }
+
+    /* Standard Normal Photostrip Container */
+    .photostrip {
+      width: 172.8px;
+      height: 537.6px;
+      padding: 13.44px;
+      display: flex;
+      flex-direction: column;
+      gap: 7.68px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      box-shadow: var(--shadow-soft);
+      transition: background 0.3s ease;
+    }
+
+    /* Full Bleed Photostrip for Double Layout */
+    .print-sheet-4x6.layout-double .photostrip {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    /* Mini Photostrip Container (2 Photos) */
+    .photostrip-mini {
+      width: 81.6px;
+      height: 259.2px;
+      padding: 6.72px;
+      display: flex;
+      flex-direction: column;
+      gap: 3.84px;
+      box-sizing: border-box;
+      border-radius: 3px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: background 0.3s ease;
+    }
+
+    .photo-slot {
+      width: 100%;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: #222;
+    }
+    .photo-slot img, .photo-slot video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .strip-footer-text {
+      text-align: center;
+      font-size: 0.65rem;
+      font-family: var(--font-retro);
+      letter-spacing: 1px;
+      margin-top: 2px;
+      font-weight: bold;
+    }
+    .default-footer {
+      display: inline-block;
+      font-family: var(--font-main);
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: none;
+      opacity: 0.9;
+      white-space: nowrap;
+      padding: 2px 8px 3px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.25);
+      box-shadow: 0 2px 0 rgba(28,82,118,0.12);
+    }
+
+    .photostrip-mini .strip-footer-text {
+      font-size: 0.45rem;
+      letter-spacing: 0px;
+      margin-top: 1px;
+    }
+    .photostrip-mini .default-footer {
+      font-size: 0.34rem;
+      letter-spacing: 0.05em;
+      padding: 1px 4px 2px;
+    }
+
+    /* Sky Theme Frame Styles */
+    .frame-color-sky-blue { background-color: #81d4fa !important; color: #0d47a1 !important; }
+    .frame-color-cloud-white { background-color: #ffffff !important; color: #0277bd !important; }
+    .frame-color-deep-sky { background-color: #0288d1 !important; color: #ffffff !important; }
+    .frame-color-sunset-sky { background-color: #ffcc80 !important; color: #e65100 !important; }
+    .frame-color-navy-sky { background-color: #0a192f !important; color: #ffffff !important; }
+
+    .frame-pattern-cloud-dots {
+      background-color: #81d4fa !important;
+      background-image: radial-gradient(#ffffff 25%, transparent 25%) !important;
+      background-size: 16px 16px !important;
+      color: #0d47a1 !important;
+    }
+    .frame-pattern-sky-grid {
+      background-color: #e1f5fe !important;
+      background-image: linear-gradient(90deg, rgba(2,136,209,0.2) 50%, transparent 50%), linear-gradient(rgba(2,136,209,0.2) 50%, transparent 50%) !important;
+      background-size: 18px 18px !important;
+      color: #01579b !important;
+    }
+
+    .frame-vintage-film { background-color: #121212 !important; color: #ffffff !important; }
+    .frame-vintage-film {
+      position: relative;
+      padding-left: 18px !important;
+      padding-right: 18px !important;
+    }
+    .frame-vintage-film::before,
+    .frame-vintage-film::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      width: 10px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #ffffff 0 8px,
+        transparent 8px 16px
+      );
+      opacity: 0.9;
+      pointer-events: none;
+    }
+    .frame-vintage-film::before { left: 4px; }
+    .frame-vintage-film::after { right: 4px; }
+    .film-footer {
+      display: none;
+      position: relative;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 3px;
+      row-gap: 1px;
+      width: 100%;
+      min-height: 34px;
+      padding: 3px 2px 0;
+      font-family: var(--font-retro);
+      font-size: 0.38rem;
+      line-height: 1.05;
+      letter-spacing: -0.15px !important;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      border-top: 1px solid rgba(255,255,255,0.55);
+    }
+    .film-footer::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      border-top: 1px solid rgba(255,255,255,0.22);
+    }
+    .film-footer span:nth-child(even) {
+      text-align: right;
+    }
+    .frame-vintage-film .strip-footer-text {
+      font-size: 0 !important;
+      overflow: hidden;
+    }
+    .frame-vintage-film .default-footer {
+      display: none;
+    }
+    .frame-vintage-film .film-footer {
+      display: grid;
+    }
+
+    /* Main Booth */
+    .booth-layout {
+      --booth-height: 580px;
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr) 190px;
+      gap: clamp(16px, 2.5vw, 34px);
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 1500px;
+    }
+    #screen-booth {
+      max-width: none;
+      padding: 18px 12px;
+    }
+
+    .booth-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      align-self: center;
+      min-width: 0;
+    }
+    .booth-frame-title {
+      font-weight: bold;
+      font-size: 1.05rem;
+      margin-top: 2px;
+    }
+    .booth-control-section {
+      background: rgba(255, 255, 255, 0.85);
+      border: 2px solid var(--primary-blue);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .booth-control-section + .booth-control-section {
+      margin-top: 2px;
+    }
+    .booth-control-section .booth-frame-title,
+    .booth-control-section .filter-title {
+      display: block;
+      margin: 0 0 8px;
+    }
+    .booth-frame-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(70px, 1fr));
+      gap: 7px;
+    }
+    .booth-frame-grid .frame-tile {
+      min-width: 0;
+      padding: 5px;
+      border-width: 2px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+    }
+    .booth-frame-grid .frame-tile.frame-name-only {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 6px;
+      font-size: 0.85rem;
+      line-height: 1.1;
+      background: #f4faff;
+    }
+
+    .camera-container {
+      position: relative;
+      width: 100%;
+      height: var(--booth-height);
+      min-height: 0;
+      aspect-ratio: auto;
+      background: #000;
+      border: 4px solid var(--primary-blue);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    video#webcam {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    .countdown-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 10rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.2);
+    }
+
+    .filter-bar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 0;
+      justify-content: flex-start;
+      max-width: none;
+    }
+    .filter-btn {
+      background: #fff;
+      border: 2px solid var(--primary-blue);
+      padding: 7px 9px;
+      border-radius: 16px;
+      font-size: 0.86rem;
+      cursor: pointer;
+      font-family: var(--font-main);
+      width: 100%;
+    }
+    .filter-btn.active {
+      background: var(--primary-blue);
+      color: #fff;
+    }
+
+    /* Filters */
+    .filter-normal { filter: none; }
+    .filter-monochrome { filter: grayscale(100%); }
+    .filter-warm { filter: sepia(30%) contrast(105%) brightness(105%); }
+    .filter-retro { filter: contrast(120%) hue-rotate(-15deg) saturate(130%); }
+
+    .booth-camera-stage {
+      min-width: 0;
+      width: 100%;
+      height: var(--booth-height);
+      display: flex;
+    }
+    .booth-strip-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding-left: 6px;
+      padding-right: 4px;
+      justify-self: end;
+      width: 100%;
+      position: relative;
+      align-self: center;
+      height: var(--booth-height);
+    }
+    #screen-booth .booth-strip-preview > p {
+      position: absolute;
+      top: -28px;
+      left: 0; right: 0;
+      z-index: 3;
+      margin: 0;
+      font-size: 0.92rem !important;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      text-shadow: 0 1px 0 var(--bg-color);
+    }
+    .booth-strip-preview .photostrip {
+      width: 165px;
+      height: 100%;
+      padding: 8px;
+      gap: 5px;
+      border-radius: 5px;
+    }
+    .booth-strip-preview .strip-footer-text {
+      font-size: 0.38rem;
+      letter-spacing: 0;
+    }
+
+    @media (max-width: 1050px) {
+      .booth-layout {
+        --booth-height: 520px;
+        grid-template-columns: 250px minmax(0, 1fr) 170px;
+        gap: 18px;
+      }
+      .booth-strip-preview .photostrip {
+        width: 155px;
+        height: 100%;
+      }
+    }
+    @media (max-width: 760px) {
+      .screen { padding: 18px 12px; }
+      .frame-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .booth-layout {
+        --booth-height: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .booth-camera-stage { order: 1; }
+      .booth-controls { order: 2; width: 100%; }
+      .filter-bar { max-width: none; flex-direction: row; justify-content: center; }
+      .filter-btn { width: auto; }
+      .booth-strip-preview { order: 3; align-self: auto; }
+      #screen-booth .booth-strip-preview > p { position: relative; top: auto; margin-bottom: 2px; }
+      .booth-strip-preview .photostrip { height: 430px; }
+      .booth-camera-stage, .booth-strip-preview { height: auto; }
+      .camera-container { height: auto; aspect-ratio: 4 / 3; min-height: 0; }
+    }
+
+    #screen-preview {
+      padding: 16px 12px;
+      overflow: hidden;
+    }
+    #screen-preview .screen-title {
+      font-size: clamp(1.55rem, 4vw, 2.8rem);
+      margin-bottom: 6px !important;
+    }
+    #final-sheet-display-container {
+      width: 100%;
+      min-height: 0;
+      display: flex;
+      justify-content: center;
+      overflow: visible;
+      margin-bottom: 10px !important;
+    }
+    #live-preview-sheet {
+      transform: scale(0.82) !important;
+      transform-origin: top center;
+      margin: 6px auto -96px !important;
+    }
+
+    /* Printable 4x6 Sheet Container */
+    .print-sheet-4x6 {
+      width: 384px;
+      height: 576px;
+      background-color: #ffffff;
+      display: flex;
+      box-sizing: border-box;
+      padding: 0;
+      position: relative;
+      margin: 0;
+      border: 2px solid var(--primary-blue);
+      border-radius: 8px;
+      box-shadow: var(--shadow-soft);
+      gap: 0;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Double Layout: 2 Normal Photostrips */
+    .print-sheet-4x6.layout-double {
+      padding: 0;
+    }
+    .print-sheet-4x6.layout-double .cutting-guide {
+      position: absolute;
+      left: 50%; top: 0; bottom: 0;
+      width: 0;
+      border-left: 1.5px dashed rgba(0, 0, 0, 0.35);
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+    .print-sheet-4x6.layout-double .sheet-half {
+      width: 50%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* Mini Layout: 1 Normal + 4 Minis in 2x2 Grid */
+    .print-sheet-4x6.layout-mini {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: stretch;
+      padding: 0; border: 0; border-radius: 0; box-shadow: none;
+    }
+    .mini-grid-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 0;
+      width: 192px;
+      height: 576px;
+      flex: 0 0 192px;
+      background: #ffffff;
+      position: relative;
+    }
+
+    .mini-grid-container::before {
+      content: '';
+      position: absolute;
+      left: 50%; top: 0; bottom: 0;
+      width: 1px;
+      background: #ffffff;
+      z-index: 5;
+      transform: translateX(-50%);
+    }
+
+    .mini-grid-container::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      height: 1px;
+      background: #ffffff;
+      z-index: 5;
+      transform: translateY(-50%);
+    }
+    .print-sheet-4x6.layout-mini > .photostrip {
+      width: 172.8px;
+      height: 537.6px;
+      flex: 0 0 192px;
+      border-radius: 0;
+      box-shadow: none;
+      position: relative;
+      align-self: center;
+      margin: 0 auto;
+    }
+
+    .print-sheet-4x6.layout-mini > .photostrip::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 1px;
+      border-left: 1px dashed rgba(0,0,0,0.35);
+      z-index: 20;
+      pointer-events: none;
+    }
+    .print-sheet-4x6.layout-mini .photostrip-mini {
+      width: 86.4px;
+      height: 268.8px;
+      padding: 6.72px;
+      gap: 3.84px;
+      border-radius: 0;
+      box-shadow: none;
+      justify-self: center;
+      align-self: center;
+    }
+
+    /* Offscreen wrapper used during PDF compilation */
+    #pdf-print-area-wrapper {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 384px;
+      height: 576px;
+      overflow: hidden;
+    }
+    #pdf-print-area-wrapper .print-sheet-4x6 {
+      flex: 0 0 384px;
+      overflow: hidden;
+    }
+    #pdf-print-area-wrapper .print-sheet-4x6.layout-double .sheet-half {
+      width: 50%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Flash Screen Effect -->
+  <div id="flash-overlay"></div>
+
+  <!-- Background Floating Skies & Airplane Elements -->
+  <div class="sticker" style="top: 8%; left: 6%;">☁️</div>
+  <div class="sticker airplane-sticker">✈️</div>
+  <div class="sticker" style="bottom: 10%; left: 8%; animation-delay: 2s;">🌤️</div>
+  <div class="sticker cloud-sticker" style="animation-delay: 1.5s;">☁️</div>
+
+  <!-- SCREEN 1: Welcome -->
+  <div id="screen-welcome" class="screen active">
+    <h1 class="brand-title">Kapilya @52</h1>
+
+    <p style="
+        font-family: var(--font-retro);
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+        margin-top: 2px;
+        margin-bottom: 25px;
+        opacity: 0.9;
+    ">
+        ✈️ photobooth in the clouds ☁️
+    </p>
+
+    <button class="btn" onclick="goToScreen('screen-type')">Start 🛫</button>
+  </div>
+
+  <!-- SCREEN 2: Photostrip Type Selection -->
+  <div id="screen-type" class="screen">
+    <h2 class="screen-title">Choose Your Photostrip ☁️✈️</h2>
+
+    <div class="type-options-grid">
+      <div class="type-card" onclick="selectType('double')">
+        <h3>✈️ Double Photostrip</h3>
+        <p>2 normal photostrips</p>
+        <div class="wireframe-container">
+          <div class="wf-strip normal">
+            <div class="wf-slot"></div><div class="wf-slot"></div>
+            <div class="wf-slot"></div><div class="wf-slot"></div>
+          </div>
+          <div class="wf-strip normal">
+            <div class="wf-slot"></div><div class="wf-slot"></div>
+            <div class="wf-slot"></div><div class="wf-slot"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="type-card" onclick="selectType('mini')">
+        <h3>☁️ Mini Strips</h3>
+        <p>4 mini strips + 1 normal strip</p>
+        <div class="wireframe-container">
+          <div class="wf-strip normal">
+            <div class="wf-slot"></div><div class="wf-slot"></div>
+            <div class="wf-slot"></div><div class="wf-slot"></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; height: 100%;">
+            <div class="wf-strip mini" style="height: 48%;"><div class="wf-slot"></div><div class="wf-slot"></div></div>
+            <div class="wf-strip mini" style="height: 48%;"><div class="wf-slot"></div><div class="wf-slot"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; height: 100%;">
+            <div class="wf-strip mini" style="height: 48%;"><div class="wf-slot"></div><div class="wf-slot"></div></div>
+            <div class="wf-strip mini" style="height: 48%;"><div class="wf-slot"></div><div class="wf-slot"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 10px;">
+      <button class="btn btn-secondary" onclick="goToScreen('screen-welcome')">Back</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Interactive Live Photobooth -->
+  <div id="screen-booth" class="screen">
+    <h2 class="screen-title" style="margin-bottom: 15px;">Get Ready! 📸✈️</h2>
+    
+    <div class="booth-layout">
+      <aside class="booth-controls">
+        <section class="booth-control-section">
+          <p class="booth-frame-title">☁️ Sky Frames</p>
+          <div class="booth-frame-grid" id="booth-frame-tiles-container"></div>
+        </section>
+
+        <section class="booth-control-section">
+          <p class="filter-title" style="font-weight: bold; font-size: 1.1rem;">Camera Filters</p>
+          <div class="filter-bar">
+            <button class="filter-btn active" onclick="setFilter('filter-normal', this)">Normal</button>
+            <button class="filter-btn" onclick="setFilter('filter-warm', this)">Warm</button>
+            <button class="filter-btn" onclick="setFilter('filter-monochrome', this)">B&amp;W</button>
+            <button class="filter-btn" onclick="setFilter('filter-retro', this)">Vintage</button>
+          </div>
+        </section>
+      </aside>
+
+      <div class="booth-camera-stage">
+        <div class="camera-container">
+          <video id="webcam" autoplay playsinline muted></video>
+          <div id="countdown" class="countdown-overlay">5</div>
+        </div>
+      </div>
+
+      <aside class="booth-strip-preview">
+        <p style="font-weight: bold; font-size: 0.8rem; text-align: center;">✈️ Your preview</p>
+        <div class="photostrip frame-color-sky-blue" id="booth-live-strip">
+          <div class="photo-slot" id="booth-slot-0"></div>
+          <div class="photo-slot" id="booth-slot-1"></div>
+          <div class="photo-slot" id="booth-slot-2"></div>
+          <div class="photo-slot" id="booth-slot-3"></div>
+          <div class="strip-footer-text"><span class="default-footer">Kapilya @52 ✈️☁️</span><span class="film-footer"><span>FLIGHT: KP-52</span><span>GATE: 8</span><span>TITLE: KAPILYA @52</span><span>DATE: 2026</span></span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div style="margin-top: 30px; display: flex; gap: 20px;">
+      <button id="booth-back-btn" class="btn btn-secondary" onclick="goToScreen('screen-type')">Back</button>
+      <button id="snap-btn" class="btn" onclick="startCaptureSequence()">📸 Take Photos</button>
+      <button id="next-to-preview-btn" class="btn" style="display:none;" onclick="goToScreen('screen-preview')">View Result</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: Final Strip Display (Exact PDF 4x6 Layout Preview) -->
+  <div id="screen-preview" class="screen">
+    <h2 class="screen-title" style="margin-bottom: 15px;">Print Preview (4x6 Sheet) 🖨️✈️</h2>
+    
+    <div id="final-sheet-display-container" style="margin-bottom: 25px;"></div>
+
+    <div style="display: flex; gap: 20px;">
+      <button class="btn" onclick="retakePhotos()">Retake</button>
+      <button class="btn" style="background: var(--accent-sky-soft);" onclick="downloadPDF()">🖨️ Download PDF</button>
+      <button class="btn btn-secondary" onclick="resetApp()">Home</button>
+    </div>
+  </div>
+
+  <!-- Hidden Printable Template Area -->
+  <div id="pdf-print-area-wrapper">
+    <div id="print-sheet-export" class="print-sheet-4x6"></div>
+  </div>
+
+  <script>
+    // State
+    let selectedType = 'double';
+    let selectedFrameClass = 'frame-color-sky-blue';
+    let currentFilter = 'filter-normal';
+    let capturedImages = [];
+    let mediaStream = null;
+
+    const frameList = [
+      { name: 'Sky Blue ☁️', class: 'frame-color-sky-blue' },
+      { name: 'Cloud White', class: 'frame-color-cloud-white' },
+      { name: 'Deep Sky', class: 'frame-color-deep-sky' },
+      { name: 'Cloud Polka ☁️', class: 'frame-pattern-cloud-dots' },
+      { name: 'Sky Grid', class: 'frame-pattern-sky-grid' },
+      { name: 'Sunset Sky 🌅', class: 'frame-color-sunset-sky' },
+      { name: 'Night Sky 🌙', class: 'frame-color-navy-sky' },
+      { name: 'Film Strip 🎞️', class: 'frame-vintage-film' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderFrameGrid();
+      applyFrameToBooth();
+    });
+
+    function goToScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+
+      if (screenId === 'screen-booth') {
+        initCamera();
+        applyFrameToBooth();
+      } else if (screenId === 'screen-preview') {
+        renderFinalDisplay();
+      }
+    }
+
+    function selectType(type) {
+      selectedType = type;
+      renderFrameGrid();
+      goToScreen('screen-booth');
+    }
+
+    function renderFrameGrid() {
+      const container = document.getElementById('booth-frame-tiles-container');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      frameList.forEach(frame => {
+        const tile = document.createElement('button');
+        tile.type = 'button';
+        tile.className = `frame-tile frame-name-only ${frame.class === selectedFrameClass ? 'selected' : ''}`;
+        tile.innerHTML = `<span>${frame.name}</span>`;
+
+        tile.addEventListener('click', () => {
+          selectedFrameClass = frame.class;
+          applyFrameToBooth();
+          renderFrameGrid();
+        });
+
+        container.appendChild(tile);
+      });
+
+      applyFrameToBooth();
+    }
+
+    function applyFrameToBooth() {
+      const boothStrip = document.getElementById('booth-live-strip');
+      if (!boothStrip) return;
+      boothStrip.className = `photostrip ${selectedFrameClass}`;
+    }
+
+    async function initCamera() {
+      if (mediaStream) return;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: { ideal: 1280 }, height: { ideal: 960 }, facingMode: 'user' }, 
+          audio: false 
+        });
+        
+        const videoElem = document.getElementById('webcam');
+        videoElem.srcObject = mediaStream;
+      } catch (err) {
+        alert('Camera access denied or unavailable.');
+      }
+    }
+
+    function setFilter(filterClass, clickedButton) {
+      currentFilter = filterClass;
+      document.getElementById('webcam').className = filterClass;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      if (clickedButton) clickedButton.classList.add('active');
+    }
+
+    async function startCaptureSequence() {
+      capturedImages = [];
+      document.getElementById('snap-btn').style.display = 'none';
+      document.getElementById('booth-back-btn').style.display = 'none';
+
+      for (let i = 0; i < 4; i++) {
+        await runCountdown(5);
+        const dataUrl = captureCanvasFrame();
+        triggerFlash();
+        capturedImages.push(dataUrl);
+
+        const slot = document.getElementById(`booth-slot-${i}`);
+        slot.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+      }
+
+      document.getElementById('next-to-preview-btn').style.display = 'inline-block';
+    }
+
+    function stylesForFooter(frameClass) {
+      return ['frame-color-cloud-white', 'frame-pattern-sky-grid', 'frame-color-sunset-sky'].includes(frameClass)
+        ? '#01579b' : '#ffffff';
+    }
+
+    function drawStripFooter(ctx, x, y, width, height, frameClass) {
+      ctx.fillStyle = stylesForFooter(frameClass);
+      if (frameClass === 'frame-vintage-film') {
+         ctx.font = `bold ${Math.max(12, width * 0.035)}px 'VT323', monospace`;
+         ctx.textAlign = 'left';
+         const footerLeft = x + width * 0.12;
+         const footerBottom = y + height - Math.max(18, height * 0.025);
+         const footerLineGap = Math.max(18, height * 0.035);
+         ctx.fillText('FLIGHT: KP-52                GATE: 8', footerLeft, footerBottom - footerLineGap);
+         ctx.fillText('TITLE: KAPILYA @52           DATE: 2026', footerLeft, footerBottom);
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = Math.max(1, width * 0.003);
+        ctx.beginPath();
+         ctx.moveTo(x + width * 0.08, footerBottom - footerLineGap / 2);
+         ctx.lineTo(x + width * 0.92, footerBottom - footerLineGap / 2);
+        ctx.stroke();
+      } else {
+         ctx.font = `bold ${Math.max(12, width * 0.034)}px 'Fredoka', sans-serif`;
+        ctx.textAlign = 'center';
+         const footerText = 'Kapilya @52 ✈️☁️';
+        const textWidth = ctx.measureText(footerText).width;
+        const pillWidth = Math.min(width * 0.86, textWidth + 28);
+        const pillHeight = Math.max(24, width * 0.065);
+        const pillX = x + (width - pillWidth) / 2;
+        const pillY = y + height - pillHeight - 10;
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = stylesForFooter(frameClass) === '#ffffff' ? '#ffffff' : '#0288d1';
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.65;
+        ctx.strokeStyle = stylesForFooter(frameClass);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = stylesForFooter(frameClass);
+        ctx.fillText(footerText, x + width / 2, pillY + pillHeight * 0.68);
+        ctx.restore();
+      }
+    }
+
+    function triggerFlash() {
+      const flash = document.getElementById('flash-overlay');
+      flash.style.opacity = '0.9';
+      setTimeout(() => { flash.style.opacity = '0'; }, 150);
+    }
+
+    function runCountdown(seconds) {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById('countdown');
+        overlay.style.display = 'flex';
+        let count = seconds;
+        overlay.innerText = count;
+
+        const timer = setInterval(() => {
+          count--;
+          if (count > 0) {
+            overlay.innerText = count;
+          } else {
+            clearInterval(timer);
+            overlay.style.display = 'none';
+            resolve();
+          }
+        }, 1000);
+      });
+    }
+
+    function captureCanvasFrame() {
+      const video = document.getElementById('webcam');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+
+      ctx.filter = getComputedStyle(video).filter;
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      return canvas.toDataURL('image/jpeg', 0.95);
+    }
+
+    function createNormalStripHTML() {
+      return `
+        <div class="photostrip ${selectedFrameClass}">
+          <div class="photo-slot"><img src="${capturedImages[0]}" alt=""></div>
+          <div class="photo-slot"><img src="${capturedImages[1]}" alt=""></div>
+          <div class="photo-slot"><img src="${capturedImages[2]}" alt=""></div>
+          <div class="photo-slot"><img src="${capturedImages[3]}" alt=""></div>
+          <div class="strip-footer-text"><span class="default-footer">Kapilya @52 ✈️☁️</span><span class="film-footer"><span>FLIGHT: KP-52</span><span>GATE: 8</span><span>TITLE: KAPILYA @52</span><span>DATE: 2026</span></span></div>
+        </div>
+      `;
+    }
+
+    function createMiniStripHTML(firstIndex, secondIndex) {
+      return `
+        <div class="photostrip-mini ${selectedFrameClass}">
+          <div class="photo-slot"><img src="${capturedImages[firstIndex]}" alt=""></div>
+          <div class="photo-slot"><img src="${capturedImages[secondIndex]}" alt=""></div>
+          <div class="strip-footer-text"><span class="default-footer">Kapilya @52 ✈️</span><span class="film-footer"><span>FLIGHT: KP-52</span><span>GATE: 8</span><span>TITLE: KAPILYA @52</span><span>DATE: 2026</span></span></div>
+        </div>
+      `;
+    }
+
+    function renderFinalDisplay() {
+      const exportSheet = document.getElementById('print-sheet-export');
+      exportSheet.innerHTML = '';
+
+      if (selectedType === 'double') {
+        exportSheet.className = 'print-sheet-4x6 layout-double';
+        exportSheet.innerHTML = `
+          <div class="cutting-guide"></div>
+          <div class="sheet-half">${createNormalStripHTML()}</div>
+          <div class="sheet-half">${createNormalStripHTML()}</div>
+        `;
+      } else {
+        exportSheet.className = `print-sheet-4x6 layout-mini ${selectedFrameClass}`;
+        exportSheet.innerHTML = `
+          <div class="mini-grid-container">
+            ${createMiniStripHTML(0, 1)}
+            ${createMiniStripHTML(2, 3)}
+            ${createMiniStripHTML(0, 1)}
+            ${createMiniStripHTML(2, 3)}
+          </div>
+          ${createNormalStripHTML()}
+        `;
+      }
+
+      const container = document.getElementById('final-sheet-display-container');
+      container.innerHTML = '';
+      
+      const sheetClone = exportSheet.cloneNode(true);
+      sheetClone.id = 'live-preview-sheet';
+      sheetClone.style.transform = 'scale(1.15)';
+      sheetClone.style.margin = '35px auto';
+
+      container.appendChild(sheetClone);
+    }
+
+    function retakePhotos() {
+      document.getElementById('next-to-preview-btn').style.display = 'none';
+      document.getElementById('snap-btn').style.display = 'inline-block';
+      document.getElementById('booth-back-btn').style.display = 'inline-block';
+      for (let i = 0; i < 4; i++) {
+        document.getElementById(`booth-slot-${i}`).innerHTML = '';
+      }
+      goToScreen('screen-booth');
+    }
+
+    function resetApp() {
+      capturedImages = [];
+      document.getElementById('next-to-preview-btn').style.display = 'none';
+      document.getElementById('snap-btn').style.display = 'inline-block';
+      document.getElementById('booth-back-btn').style.display = 'inline-block';
+      for (let i = 0; i < 4; i++) {
+        document.getElementById(`booth-slot-${i}`).innerHTML = '';
+      }
+      goToScreen('screen-welcome');
+    }
+
+    async function downloadPDF() {
+      if (capturedImages.length < 4 || !window.jspdf) return;
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      const page = document.createElement('canvas');
+      page.width = 2400;
+      page.height = 3600;
+      const ctx = page.getContext('2d');
+      ctx.scale(2, 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 1200, 1800);
+
+      if (selectedType === 'double') {
+        await drawStripCanvas(ctx, 0, 0, 600, 1800, capturedImages);
+        await drawStripCanvas(ctx, 600, 0, 600, 1800, capturedImages);
+        ctx.save();
+        ctx.setLineDash([12, 12]);
+        ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+        ctx.beginPath();
+        ctx.moveTo(600, 0);
+        ctx.lineTo(600, 1800);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        await drawStripCanvas(ctx, 0, 0, 300, 900, capturedImages);
+        await drawStripCanvas(ctx, 300, 0, 300, 900, capturedImages);
+        await drawStripCanvas(ctx, 0, 900, 300, 900, capturedImages);
+        await drawStripCanvas(ctx, 300, 900, 300, 900, capturedImages);
+        await drawStripCanvas(ctx, 600, 0, 600, 1800, capturedImages);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([10, 10]);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.moveTo(300, 0);
+        ctx.lineTo(300, 1800);
+        ctx.moveTo(600, 0);
+        ctx.lineTo(600, 1800);
+        ctx.moveTo(0, 900);
+        ctx.lineTo(600, 900);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'in', format: [4, 6] });
+      pdf.addImage(page.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, 4, 6);
+      pdf.save('kapilya_at_52_photobooth.pdf');
+    }
+
+    function loadCanvasImage(src) {
+      return new Promise(resolve => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.src = src;
+      });
+    }
+
+    function drawImageCover(ctx, source, dx, dy, dWidth, dHeight) {
+      const sw = source.naturalWidth || source.videoWidth || source.width;
+      const sh = source.naturalHeight || source.videoHeight || source.height;
+      if (!sw || !sh) {
+        ctx.drawImage(source, dx, dy, dWidth, dHeight);
+        return;
+      }
+      const srcRatio = sw / sh;
+      const dstRatio = dWidth / dHeight;
+      let sx, sy, sWidth, sHeight;
+      if (srcRatio > dstRatio) {
+        sHeight = sh;
+        sWidth = sh * dstRatio;
+        sx = (sw - sWidth) / 2;
+        sy = 0;
+      } else {
+        sWidth = sw;
+        sHeight = sw / dstRatio;
+        sx = 0;
+        sy = (sh - sHeight) / 2;
+      }
+      ctx.drawImage(source, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+    }
+
+    async function drawStripCanvas(ctx, x, y, width, height, images) {
+      const frameColors = {
+        'frame-color-sky-blue': ['#81d4fa', '#0d47a1', 'solid'],
+        'frame-color-cloud-white': ['#ffffff', '#0277bd', 'solid'],
+        'frame-color-deep-sky': ['#0288d1', '#ffffff', 'solid'],
+        'frame-color-sunset-sky': ['#ffcc80', '#e65100', 'solid'],
+        'frame-color-navy-sky': ['#0a192f', '#ffffff', 'solid'],
+        'frame-pattern-cloud-dots': ['#81d4fa', '#ffffff', 'dots'],
+        'frame-pattern-sky-grid': ['#e1f5fe', '#0288d1', 'grid'],
+        'frame-vintage-film': ['#121212', '#ffffff', 'film']
+      };
+      const [background, accent, pattern] = frameColors[selectedFrameClass] || frameColors['frame-color-sky-blue'];
+      const isFilmStrip = selectedFrameClass === 'frame-vintage-film';
+
+      const horizontalPadding = isFilmStrip
+        ? width * (18 / 172.8)
+        : Math.max(12, width * 0.07);
+      const padding = Math.max(12, width * 0.07);
+      const gap = Math.max(7, width * 0.025);
+      const footer = Math.max(28, height * 0.055);
+      const photoWidth = width - horizontalPadding * 2;
+      const photoHeight = (height - padding * 2 - footer - gap * (images.length - 1)) / images.length;
+
+      ctx.fillStyle = background;
+      ctx.fillRect(x, y, width, height);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, width, height);
+      ctx.clip();
+      if (pattern === 'dots') {
+        ctx.fillStyle = accent;
+        for (let px = x + 12; px < x + width; px += 30) {
+          for (let py = y + 12; py < y + height; py += 30) {
+            ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      } else if (pattern === 'grid') {
+        ctx.strokeStyle = accent;
+        ctx.globalAlpha = 0.25;
+        ctx.lineWidth = 15;
+        for (let px = x; px < x + width; px += 30) {
+          ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(px, y + height); ctx.stroke();
+        }
+        for (let py = y; py < y + height; py += 30) {
+          ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x + width, py); ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      const loadedImages = await Promise.all(images.map(loadCanvasImage));
+      loadedImages.forEach((image, index) => {
+        const photoY = y + padding + index * (photoHeight + gap);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x + horizontalPadding, photoY, photoWidth, photoHeight);
+        ctx.clip();
+        drawImageCover(ctx, image, x + horizontalPadding, photoY, photoWidth, photoHeight);
+        ctx.restore();
+      });
+
+      if (isFilmStrip) {
+        const holeWidth = width * (10 / 172.8);
+        const holeHeight = height * (8 / 537.6);
+        const holeInset = width * (4 / 172.8);
+        const holeStep = height * (16 / 537.6);
+        ctx.save();
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.9;
+        for (let holeY = y + height * (8 / 537.6);
+             holeY < y + height - height * (8 / 537.6);
+             holeY += holeStep) {
+          ctx.fillRect(x + holeInset, holeY, holeWidth, holeHeight);
+          ctx.fillRect(x + width - holeInset - holeWidth, holeY, holeWidth, holeHeight);
+        }
+        ctx.restore();
+      }
+
+      drawStripFooter(ctx, x, y, width, height, selectedFrameClass);
+    }
+  </script>
+</body>
+</html>
