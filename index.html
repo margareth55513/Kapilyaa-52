@@ -507,7 +507,10 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1);
+      transform: scaleX(-1); /* Default for front camera mirror effect */
+    }
+    video#webcam.back-camera {
+      transform: scaleX(1); /* Disable mirroring for back camera */
     }
     .countdown-overlay {
       position: absolute;
@@ -869,7 +872,10 @@
         </section>
 
         <section class="booth-control-section">
-          <p class="filter-title" style="font-weight: bold; font-size: 1.1rem;">Camera Filters</p>
+          <p class="filter-title" style="font-weight: bold; font-size: 1.1rem;">Camera Options</p>
+          <button class="filter-btn active" id="camera-switch-btn" onclick="toggleCamera()" style="width: 100%; margin-bottom: 8px;">📷 Switch Camera (Front)</button>
+          
+          <p class="filter-title" style="font-weight: bold; font-size: 1.1rem; margin-top: 8px;">Camera Filters</p>
           <div class="filter-bar">
             <button class="filter-btn active" onclick="setFilter('filter-normal', this)">Normal</button>
             <button class="filter-btn" onclick="setFilter('filter-warm', this)">Warm</button>
@@ -930,6 +936,7 @@
     let currentFilter = 'filter-normal';
     let capturedImages = [];
     let mediaStream = null;
+    let useBackCamera = false; // Tracks current camera facing mode
 
     const frameList = [
       { name: 'Sky Blue ☁️', class: 'frame-color-sky-blue' },
@@ -996,25 +1003,61 @@
     }
 
     async function initCamera() {
-      if (mediaStream) return;
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { width: { ideal: 1280 }, height: { ideal: 960 }, facingMode: 'user' }, 
+        const constraints = { 
+          video: { 
+            width: { ideal: 1280 }, 
+            height: { ideal: 960 }, 
+            facingMode: useBackCamera ? { exact: "environment" } : "user" 
+          }, 
           audio: false 
-        });
+        };
+
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (e) {
+          // Fallback if exact environment constraint fails on some browsers/devices
+          mediaStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: { ideal: 1280 }, height: { ideal: 960 }, facingMode: useBackCamera ? "environment" : "user" }, 
+            audio: false 
+          });
+        }
         
         const videoElem = document.getElementById('webcam');
         videoElem.srcObject = mediaStream;
+
+        // Update video element mirror state and button text
+        const switchBtn = document.getElementById('camera-switch-btn');
+        if (useBackCamera) {
+          videoElem.classList.add('back-camera');
+          switchBtn.innerText = '📷 Switch Camera (Back)';
+        } else {
+          videoElem.classList.remove('back-camera');
+          switchBtn.innerText = '📷 Switch Camera (Front)';
+        }
       } catch (err) {
         alert('Camera access denied or unavailable.');
       }
     }
 
+    function toggleCamera() {
+      useBackCamera = !useBackCamera;
+      initCamera();
+    }
+
     function setFilter(filterClass, clickedButton) {
       currentFilter = filterClass;
-      document.getElementById('webcam').className = filterClass;
-      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-      if (clickedButton) clickedButton.classList.add('active');
+      document.getElementById('webcam').className = currentFilter + (useBackCamera ? ' back-camera' : '');
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (!btn.id.includes('camera-switch')) {
+          btn.classList.remove('active');
+        }
+      });
+      if (clickedButton && !clickedButton.id.includes('camera-switch')) clickedButton.classList.add('active');
     }
 
     async function startCaptureSequence() {
@@ -1116,8 +1159,13 @@
       const ctx = canvas.getContext('2d');
 
       ctx.filter = getComputedStyle(video).filter;
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
+      
+      if (!useBackCamera) {
+        // Mirror back for front camera
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+      
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       return canvas.toDataURL('image/jpeg', 0.95);
